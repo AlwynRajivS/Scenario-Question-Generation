@@ -251,10 +251,10 @@ footer.app-footer{text-align:center; padding:30px 20px 50px; font-size:12px; col
     </div>
 
     <div class="field">
-      <label>Question Level (Academic Year) <span class="hint" id="levelSelectedCount">4 selected</span></label>
+      <label>Question Level (School / Academic Year) <span class="hint" id="levelSelectedCount">5 selected</span></label>
       <div class="cat-picker">
         <div class="cat-picker-top">
-          <span class="hint" style="flex:1">Foundational (Yr 1) → Capstone (Yr 4)</span>
+          <span class="hint" style="flex:1">School (L0) → Foundational (Yr 1) → Capstone (Yr 4)</span>
           <button class="cat-mini-btn" id="levelSelectAll" type="button">All</button>
           <button class="cat-mini-btn" id="levelClearAll" type="button">Clear</button>
         </div>
@@ -390,16 +390,17 @@ const CAT_COLORS = ["#B8862F","#2F6F6B","#9A3B3B","#4C5B8A","#6B7A3A","#8A5C9E"]
 const colorFor = (cat) => CAT_COLORS[CATEGORIES.indexOf(cat) % CAT_COLORS.length] || "#B8862F";
 
 const LEVELS = [
+  { id:"L0", label:"Level 0 · School — Basic Understanding", short:"School · L0", depth:"School level: tests only basic conceptual/fundamental understanding of a single well-known idea, using simple everyday language, direct definitions, or one-step recall-and-apply — no multi-step or cross-topic reasoning." },
   { id:"L1", label:"Level 1 · Year 1 — Foundational", short:"Yr 1 · L1", depth:"1st-year: foundational application of a single concept, guided single-step reasoning." },
   { id:"L2", label:"Level 2 · Year 2 — Applied", short:"Yr 2 · L2", depth:"2nd-year: applied analysis connecting two related concepts, moderate multi-step reasoning." },
   { id:"L3", label:"Level 3 · Year 3 — Analytical", short:"Yr 3 · L3", depth:"3rd-year: critical evaluation and trade-off analysis across multiple variables or stakeholders." },
   { id:"L4", label:"Level 4 · Year 4 — Capstone / Strategic", short:"Yr 4 · L4", depth:"4th-year / capstone: strategic synthesis, ambiguous real-world complexity, cross-disciplinary integration and justified decision-making." }
 ];
-const LEVEL_COLORS = { L1:"#4C8F5C", L2:"#2F6F6B", L3:"#B8862F", L4:"#9A3B3B" };
+const LEVEL_COLORS = { L0:"#6B7A3A", L1:"#4C8F5C", L2:"#2F6F6B", L3:"#B8862F", L4:"#9A3B3B" };
 const levelColor = (id) => LEVEL_COLORS[id] || "#B8862F";
 const levelById = (id) => LEVELS.find(l => l.id === id) || LEVELS[0];
-const DEFAULT_MARKS = { L1:2, L2:4, L3:6, L4:8 };
-const EST_MINUTES = { L1:2, L2:3, L3:4, L4:6 };
+const DEFAULT_MARKS = { L0:1, L1:2, L2:4, L3:6, L4:8 };
+const EST_MINUTES = { L0:1, L1:2, L2:3, L3:4, L4:6 };
 const estimateTime = (levelId) => EST_MINUTES[levelId] || 3;
 
 const VERB_BANK = [
@@ -423,7 +424,7 @@ function shuffleArray(arr){
 
 const STATE = {
   selectedCategories: new Set(["Scenario-based Questions","Case Study Questions","Critical Thinking Questions","Problem-Solving Questions"]),
-  selectedLevels: new Set(["L1","L2","L3","L4"]),
+  selectedLevels: new Set(["L0","L1","L2","L3","L4"]),
   questions: [],
   filter: { search: "", category: "", level: "" },
   apiKey: "",
@@ -535,10 +536,12 @@ function buildPrompt(form, assignments, verbs){
   const assignLines = assignments.map((a,i) => `${i+1}. category="${a.category}", level="${levelById(a.level).label}"`).join("\n");
   const verbList = verbs.join(", ");
 
-  const system = `You are an expert university-level curriculum designer who writes Skill Enhancement Assessment Questions with structured answers for faculty across all four undergraduate years.
+  const system = `You are an expert curriculum designer who writes Skill Enhancement Assessment Questions with structured answers for faculty across school level and all four undergraduate years.
 
-Question depth by level (year):
+Question depth by level:
 ${levelGuide}
+
+IMPORTANT for Level 0 (School) items specifically: keep the scenario and question in plain, simple, everyday language suitable for a school student. Test only whether the student grasps the basic definition, fact, or core idea of the topic — do NOT require multi-step reasoning, trade-off analysis, or combining multiple concepts at this level.
 
 Follow these rules strictly:
 1. Every item has a realistic context/scenario of EXACTLY ${form.scenarioLines} line(s), followed by exactly ONE assessment question of EXACTLY ${form.questionLines} line(s), followed by a structured answer.
@@ -651,6 +654,7 @@ async function callGroq(system, user){
 function normalizeLevel(v){
   if(!v) return null;
   const s = String(v).toUpperCase();
+  if(s.includes("L0") || s.includes("SCHOOL")) return "L0";
   if(s.includes("L1") || s.includes("YEAR 1") || s.includes("1ST")) return "L1";
   if(s.includes("L2") || s.includes("YEAR 2") || s.includes("2ND")) return "L2";
   if(s.includes("L3") || s.includes("YEAR 3") || s.includes("3RD")) return "L3";
